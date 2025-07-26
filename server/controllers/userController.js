@@ -2,6 +2,7 @@ import e from "express";
 import { generateToken } from "../lib/utils.js";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
+import cloudinary from "../lib/cloudinary.js";
 
 
 // Signup a new user
@@ -75,4 +76,35 @@ export const checkAuth = (req, res) => {
         success: true,
         user: req.user
     });
+}
+
+// Controller to update user profile
+export const updateProfile = async (req, res) => {
+
+    try {
+        // Validate input
+        const { fullName, bio, profilePic } = req.body;
+
+        const userId = req.user._id;
+        let updatededUser;
+
+        if (!profilePic) {
+            updatededUser = await User.findByIdAndUpdate(userId,{bio, fullName}, {new: true});
+        } else {
+            const upload = await cloudinary.uploader.upload(profilePic);
+
+            updatededUser = await User.findByIdAndUpdate(userId, {profilePic: upload.secure_url, bio, fullName}, {new: true});
+        }
+        res.json({
+            success: true,
+            user: updatededUser,
+            message: "Profile updated successfully"
+        });
+
+    } catch (error) {
+        res.json({
+            success: false,
+            message: error.message
+        });
+    }
 }
